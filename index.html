@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Cybersecurity Chatbot</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #e9f0fb;
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      height: 100vh;
+      color: #333;
+    }
+
+    h1 {
+      color: #004a99;
+      margin-bottom: 20px;
+      font-weight: 700;
+      text-align: center;
+      user-select: none;
+    }
+
+    #chat-container {
+      width: 100%;
+      max-width: 720px;
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12);
+      display: flex;
+      flex-direction: column;
+      height: 700px;
+      overflow: hidden;
+    }
+
+    #chat-box {
+      flex-grow: 1;
+      padding: 20px;
+      overflow-y: auto;
+      border-bottom: 1px solid #ccc;
+      font-size: 16px;
+      line-height: 1.4; /* single line spacing */
+      color: #222;
+      word-wrap: break-word;
+      white-space: normal;
+    }
+
+    .message {
+      margin-bottom: 18px;
+      max-width: 85%;
+      padding: 14px 18px;
+      border-radius: 20px;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    .user {
+      background: #d1e7dd;
+      color: #0f5132;
+      margin-left: auto;
+      align-self: flex-end;
+      border-bottom-right-radius: 4px;
+      max-width: 65%;
+      /* flex-direction: row-reverse; */
+    }
+
+    .message.user {
+        background: #d1e7dd;
+        color: #0f5132;
+        margin-left: auto;
+        align-self: flex-end;
+        border-bottom-right-radius: 4px;
+        max-width: 65%;
+        flex-direction: row-reverse; /* avatar after text */
+        justify-content: flex-end;   /* push bubble right */
+    }
+
+    .bot {
+      background: #cfe2ff;
+      color: #084298;
+      align-self: flex-start;
+      border-bottom-left-radius: 4px;
+      box-shadow: 0 2px 5px rgba(13, 110, 253, 0.15);
+    }
+
+    .avatar {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      object-fit: cover;
+      border: 2px solid #ddd;
+      user-select: none;
+    }
+
+    #input-area {
+      display: flex;
+      padding: 15px 20px;
+      background: #f0f4f9;
+      border-radius: 0 0 16px 16px;
+      box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    textarea {
+      flex-grow: 1;
+      resize: none;
+      height: 70px;
+      padding: 14px 16px;
+      font-size: 16px;
+      border-radius: 16px;
+      border: 1.5px solid #ccc;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.3s, box-shadow 0.3s;
+      line-height: 1.4;
+    }
+
+    textarea:focus {
+      border-color: #004a99;
+      box-shadow: 0 0 8px rgba(0,74,153,0.35);
+    }
+
+    button {
+      background: #004a99;
+      color: white;
+      border: none;
+      border-radius: 16px;
+      padding: 0 26px;
+      margin-left: 16px;
+      font-size: 18px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+      font-weight: 700;
+      user-select: none;
+      box-shadow: 0 3px 8px rgba(0,74,153,0.4);
+    }
+
+    button:hover {
+      background: #00376f;
+    }
+
+    button:active {
+      background: #002649;
+    }
+
+    /* Scrollbar styling for webkit browsers */
+    #chat-box::-webkit-scrollbar {
+      width: 8px;
+    }
+    #chat-box::-webkit-scrollbar-thumb {
+      background-color: #004a99;
+      border-radius: 20px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Cybersecurity Chatbot</h1>
+  <div id="chat-container">
+    <div id="chat-box"></div>
+    <div id="input-area">
+      <textarea id="user-input" placeholder="Type your question here..."></textarea>
+      <button onclick="sendMessage()">Send</button>
+    </div>
+  </div>
+  
+
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script>
+    const userAvatar = '/static/user.jpg';
+    const botAvatar = '/static/chatbot.jpg';
+
+
+    async function sendMessage() {
+      const chatBox = document.getElementById('chat-box');
+      const input = document.getElementById('user-input');
+      let text = input.value.trim();
+      if (!text) return;
+
+      // Display user message with avatar
+      const userMsg = document.createElement('div');
+      userMsg.className = 'message user';
+      userMsg.innerHTML = `<img class="avatar" src="${userAvatar}" alt="User avatar" /> <div>You: ${escapeHtml(text)}</div>`;
+      chatBox.appendChild(userMsg);
+
+      input.value = '';
+      chatBox.scrollTop = chatBox.scrollHeight;
+
+      try {
+        const res = await fetch('http://localhost:8070/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query: text })
+        });
+        const data = await res.json();
+
+        // Display bot response with avatar and markdown rendered as HTML
+        const botMsg = document.createElement('div');
+        botMsg.className = 'message bot';
+        botMsg.innerHTML = `<img class="avatar" src="${botAvatar}" alt="Bot avatar" /> <div>${marked.parse(data.answer)}</div>`;
+        chatBox.appendChild(botMsg);
+        chatBox.scrollTop = chatBox.scrollHeight;
+      } catch (err) {
+        alert('Error connecting to backend!');
+      }
+    }
+
+    // Escape HTML to avoid injection on user input display
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // Allow pressing Enter to send and Shift+Enter for a line break
+    const inputField = document.getElementById('user-input');
+    inputField.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    });
+  </script>
+</body>
+</html>
